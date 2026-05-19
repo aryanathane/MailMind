@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@mailmind/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,8 +10,12 @@
   },
   "dependencies": {
     "next": "16.2.6",
+    "next-auth": "^5.0.0-beta.31",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "@mailmind/db": "*",
+    "@mailmind/types": "*",
+    "@mailmind/ai": "*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

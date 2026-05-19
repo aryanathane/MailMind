@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0"
-  },
   "devDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "groq-sdk": "^1.2.0"
   }
 }

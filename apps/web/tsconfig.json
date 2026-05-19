@@ -13,13 +13,12 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mailmind/types": ["../../packages/types/index.ts"],
+      "@mailmind/db": ["../../packages/db/index.ts"],
+      "@mailmind/ai": ["../../packages/ai/index.ts"]
     }
   },
   "include": [

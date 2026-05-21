@@ -3,57 +3,60 @@ import { getValidAccessToken } from "@/lib/gmail-token";
 
 const GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
 
-// ─── Header helpers ──────────────────────────────────────────────────────────
+// ─── Header helper ────────────────────────────────────────────────────────────
 
-// Extract a single header value from Gmail's header array
-// Gmail returns headers as [{ name: "Subject", value: "Hello" }, ...]
 function getHeader(
   headers: { name: string; value: string }[],
   name: string
 ): string {
   return (
-    headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ??
-    ""
+    headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? ""
   );
 }
 
-// ─── Body decoder ────────────────────────────────────────────────────────────
+// ─── Base64url decoder ────────────────────────────────────────────────────────
 
-// Gmail encodes email body as base64url (not standard base64)
-// base64url uses - and _ instead of + and /
 function decodeBase64url(data: string): string {
   const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
   return Buffer.from(base64, "base64").toString("utf-8");
 }
 
-// Recursively extract plain text body from Gmail payload
-// Emails can be: plain text, HTML, or multipart (both)
-// We always prefer plain text — simpler to send to Claude
+// ─── Body extractor ───────────────────────────────────────────────────────────
+
 function extractBody(payload: any): string {
-  // Direct plain text part
-  if (payload.mimeType === "text/plain" && payload.body?.data) {
-    return decodeBase64url(payload.body.data);
-  }
+  function collectParts(part: any): { plain: string; html: string } {
+    let plain = "";
+    let html  = "";
 
-  // Multipart email — recurse into parts to find plain text
-  if (payload.parts && Array.isArray(payload.parts)) {
-    for (const part of payload.parts) {
-      const text = extractBody(part);
-      if (text) return text;
+    if (part.mimeType === "text/plain" && part.body?.data) {
+      plain = decodeBase64url(part.body.data);
+    } else if (part.mimeType === "text/html" && part.body?.data) {
+      html = decodeBase64url(part.body.data);
     }
+
+    if (part.parts && Array.isArray(part.parts)) {
+      for (const child of part.parts) {
+        const result = collectParts(child);
+        if (result.plain) plain = result.plain;
+        if (result.html)  html  = result.html;
+      }
+    }
+
+    return { plain, html };
   }
 
-  // Fallback — HTML email with no plain text version
-  if (payload.mimeType === "text/html" && payload.body?.data) {
-    // Strip HTML tags for a rough plain text version
-    const html = decodeBase64url(payload.body.data);
-    return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  }
+  const { plain, html } = collectParts(payload);
+
+  // Always prefer plain text
+  if (plain.trim()) return plain.trim();
+
+  // Return raw HTML — rendered in iframe on frontend
+  if (html) return html;
 
   return "";
 }
 
-// ─── Main fetch function ──────────────────────────────────────────────────────
+// ─── Fetch inbox emails ───────────────────────────────────────────────────────
 
 export async function fetchInboxEmails(
   googleId: string,
@@ -61,12 +64,9 @@ export async function fetchInboxEmails(
 ): Promise<ParsedEmail[]> {
   const token = await getValidAccessToken(googleId);
 
-  // Step 1 — Get list of message IDs from inbox
   const listRes = await fetch(
     `${GMAIL_BASE}/messages?maxResults=${maxResults}&labelIds=INBOX`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
 
   if (!listRes.ok) {
@@ -75,18 +75,13 @@ export async function fetchInboxEmails(
 
   const listData = await listRes.json();
   const messages: { id: string; threadId: string }[] = listData.messages ?? [];
-
   if (messages.length === 0) return [];
 
-  // Step 2 — Fetch full email for each ID in parallel
-  // format=full gives us headers + body in one request
   const emails = await Promise.all(
     messages.map(async ({ id, threadId }) => {
       const msgRes = await fetch(
         `${GMAIL_BASE}/messages/${id}?format=full`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!msgRes.ok) {
@@ -94,8 +89,7 @@ export async function fetchInboxEmails(
       }
 
       const msg = await msgRes.json();
-      const headers: { name: string; value: string }[] =
-        msg.payload?.headers ?? [];
+      const headers: { name: string; value: string }[] = msg.payload?.headers ?? [];
 
       return {
         id,
@@ -123,7 +117,6 @@ export async function sendReply(
 ): Promise<void> {
   const token = await getValidAccessToken(googleId);
 
-  // Gmail requires the email to be base64url encoded RFC 2822 format
   const email = [
     `To: ${to}`,
     `Subject: Re: ${subject}`,
@@ -147,7 +140,7 @@ export async function sendReply(
     },
     body: JSON.stringify({
       raw: encodedEmail,
-      threadId, // keeps reply in the same thread
+      threadId,
     }),
   });
 

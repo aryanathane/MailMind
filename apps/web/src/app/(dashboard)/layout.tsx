@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { SidebarNav } from "@/components/SidebarNav";
 import { SignOutButton } from "@/components/SignOutButton";
 
 export default async function DashboardLayout({
@@ -16,8 +16,8 @@ export default async function DashboardLayout({
       {/* Sidebar */}
       <aside style={{
         width: 220, flexShrink: 0,
-        background: "var(--bg-card)",
-        borderRight: "1px solid var(--border)",
+        background: "#0f0f1a",
+        borderRight: "1px solid #1e1e35",
         display: "flex", flexDirection: "column",
         padding: "24px 0",
         position: "fixed", top: 0, left: 0,
@@ -26,52 +26,30 @@ export default async function DashboardLayout({
         {/* Logo */}
         <div style={{
           padding: "0 20px 24px",
-          borderBottom: "1px solid var(--border)",
+          borderBottom: "1px solid #1e1e35",
           marginBottom: 16,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
               width: 32, height: 32,
-              background: "var(--accent)",
+              background: "linear-gradient(135deg, #6366f1, #818cf8)",
               borderRadius: 8,
               display: "flex", alignItems: "center",
               justifyContent: "center", fontSize: 16,
-            }}>✉</div>
-            <span style={{ fontWeight: 600, fontSize: 15 }}>MailMind</span>
+            }}>✦</div>
+            <span style={{ fontWeight: 600, fontSize: 15, color: "#f0f0ff" }}>
+              MailMind
+            </span>
           </div>
         </div>
 
-        {/* Nav links */}
-        <nav style={{ flex: 1, padding: "0 12px" }}>
-          {[
-            { href: "/inbox", icon: "📥", label: "Inbox" },
-            { href: "/stats", icon: "📊", label: "Stats" },
-          ].map(({ href, icon, label }) => (
-            <Link key={href} href={href} style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 12px", borderRadius: 8,
-              color: "var(--text-muted)", textDecoration: "none",
-              fontSize: 14, marginBottom: 2,
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
-              (e.currentTarget as HTMLElement).style.color = "var(--text)";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-              (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
-            }}>
-              <span>{icon}</span>
-              <span>{label}</span>
-            </Link>
-          ))}
-        </nav>
+        {/* Nav — client component */}
+        <SidebarNav />
 
         {/* User info */}
         <div style={{
           padding: "16px 20px 0",
-          borderTop: "1px solid var(--border)",
+          borderTop: "1px solid #1e1e35",
         }}>
           <div style={{
             display: "flex", alignItems: "center",
@@ -85,10 +63,10 @@ export default async function DashboardLayout({
               />
             )}
             <div>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "#e2e2f0" }}>
                 {session.user?.name}
               </div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              <div style={{ fontSize: 11, color: "#6b6b8a" }}>
                 {session.user?.email}
               </div>
             </div>

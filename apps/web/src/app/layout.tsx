@@ -6,14 +6,10 @@ export const metadata: Metadata = {
   description: "AI-powered email assistant",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ background: "#080810", minHeight: "100vh" }}>
+      <body style={{ background: "#F0F4F9", minHeight: "100vh" }}>
         {children}
       </body>
     </html>

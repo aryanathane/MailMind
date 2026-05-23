@@ -12,25 +12,20 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <nav style={{ flex: 1, padding: "0 12px" }}>
+    <nav style={{ flex: 1, padding: "8px 12px" }}>
       {links.map(({ href, icon, label }) => {
         const active = pathname.startsWith(href);
         return (
-          <Link
-            key={href}
-            href={href}
-            style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 12px", borderRadius: 8,
-              color: active ? "#e2e2f0" : "#6b6b8a",
-              background: active ? "#ffffff0a" : "transparent",
-              textDecoration: "none",
-              fontSize: 14, marginBottom: 2,
-              transition: "all 0.15s",
-              borderLeft: active ? "2px solid #6366f1" : "2px solid transparent",
-            }}
-          >
-            <span>{icon}</span>
+          <Link key={href} href={href} style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "9px 12px", borderRadius: 8,
+            color: active ? "#3674B5" : "#3d5a80",
+            background: active ? "#EBF3FB" : "transparent",
+            textDecoration: "none",
+            fontSize: 14, fontWeight: active ? 500 : 400,
+            marginBottom: 2, transition: "all 0.15s",
+          }}>
+            <span style={{ fontSize: 15 }}>{icon}</span>
             <span>{label}</span>
           </Link>
         );

@@ -3,80 +3,105 @@ import { redirect } from "next/navigation";
 import { SidebarNav } from "@/components/SidebarNav";
 import { SignOutButton } from "@/components/SignOutButton";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session) redirect("/signin");
 
+  const name  = session.user?.name ?? "";
+  const email = session.user?.email ?? "";
+  const image = session.user?.image;
+ const initials = name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#F0F4F9" }}>
+
       {/* Sidebar */}
       <aside style={{
-        width: 220, flexShrink: 0,
-        background: "#0f0f1a",
-        borderRight: "1px solid #1e1e35",
+        width: 240, flexShrink: 0,
+        background: "#FFFFFF",
+        borderRight: "1px solid #D4E3F0",
         display: "flex", flexDirection: "column",
-        padding: "24px 0",
         position: "fixed", top: 0, left: 0,
         height: "100vh", zIndex: 10,
       }}>
+
         {/* Logo */}
         <div style={{
-          padding: "0 20px 24px",
-          borderBottom: "1px solid #1e1e35",
-          marginBottom: 16,
+          padding: "20px 20px 16px",
+          borderBottom: "1px solid #EBF2FA",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
-              width: 32, height: 32,
-              background: "linear-gradient(135deg, #6366f1, #818cf8)",
+              width: 34, height: 34,
+              background: "#3674B5",
               borderRadius: 8,
-              display: "flex", alignItems: "center",
-              justifyContent: "center", fontSize: 16,
-            }}>✦</div>
-            <span style={{ fontWeight: 600, fontSize: 15, color: "#f0f0ff" }}>
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <span style={{ fontWeight: 600, fontSize: 16, color: "#1a2744", letterSpacing: "-0.2px" }}>
               MailMind
             </span>
           </div>
         </div>
 
-        {/* Nav — client component */}
+        {/* Nav */}
         <SidebarNav />
 
-        {/* User info */}
+        {/* User profile */}
         <div style={{
-          padding: "16px 20px 0",
-          borderTop: "1px solid #1e1e35",
+          padding: "16px 20px",
+          borderTop: "1px solid #EBF2FA",
         }}>
           <div style={{
             display: "flex", alignItems: "center",
             gap: 10, marginBottom: 12,
           }}>
-            {session.user?.image && (
+            {image ? (
               <img
-                src={session.user.image}
-                alt="avatar"
-                style={{ width: 32, height: 32, borderRadius: "50%" }}
+                src={image}
+                alt={name}
+                style={{
+                  width: 36, height: 36,
+                  borderRadius: "50%",
+                  border: "2px solid #D4E3F0",
+                  objectFit: "cover",
+                }}
+                referrerPolicy="no-referrer"
               />
+            ) : (
+              <div style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: "#EBF3FB",
+                display: "flex", alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13, fontWeight: 600, color: "#3674B5",
+              }}>
+                {initials}
+              </div>
             )}
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "#e2e2f0" }}>
-                {session.user?.name}
-              </div>
-              <div style={{ fontSize: 11, color: "#6b6b8a" }}>
-                {session.user?.email}
-              </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{
+                fontSize: 13, fontWeight: 500,
+                color: "#1a2744", whiteSpace: "nowrap",
+                overflow: "hidden", textOverflow: "ellipsis",
+              }}>{name}</div>
+              <div style={{
+                fontSize: 11, color: "#7a94b0",
+                whiteSpace: "nowrap", overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}>{email}</div>
             </div>
           </div>
           <SignOutButton />
         </div>
       </aside>
 
-      {/* Main content */}
-      <main style={{ marginLeft: 220, flex: 1, padding: "32px" }}>
+      {/* Main */}
+      <main style={{ marginLeft: 240, flex: 1, padding: "28px 32px" }}>
         {children}
       </main>
     </div>

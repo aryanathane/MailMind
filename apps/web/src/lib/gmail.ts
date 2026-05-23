@@ -47,11 +47,11 @@ function extractBody(payload: any): string {
 
   const { plain, html } = collectParts(payload);
 
-  // Always prefer plain text
-  if (plain.trim()) return plain.trim();
-
-  // Return raw HTML — rendered in iframe on frontend
+  // Prefer HTML if available — rendered safely in iframe
   if (html) return html;
+
+  // Fall back to plain text
+  if (plain.trim()) return plain.trim();
 
   return "";
 }

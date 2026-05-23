@@ -16,7 +16,7 @@ const FILTERS: { label: string; value: EmailCategory | "all" }[] = [
 function timeAgo(dateStr: string): string {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
-  const diff = Date.now() - date.getTime();
+  const diff  = Date.now() - date.getTime();
   const mins  = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days  = Math.floor(diff / 86400000);
@@ -35,13 +35,21 @@ function extractEmail(from: string): string {
   return match ? match[1] : from;
 }
 
+function getInitials(name: string): string {
+  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function avatarColor(email: string): string {
+  const colors = ["#3674B5","#578FCA","#2e86ab","#1a6b4a","#7b5ea7","#c06014","#a63d2f"];
+  return colors[email.charCodeAt(0) % colors.length];
+}
+
 export default function InboxPage() {
   const [emails,   setEmails]   = useState<ParsedEmail[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [filter,   setFilter]   = useState<EmailCategory | "all">("all");
   const [triaging, setTriaging] = useState<Set<string>>(new Set());
 
-  // Fetch emails on mount
   useEffect(() => {
     fetch("/api/emails")
       .then((r) => r.json())
@@ -49,22 +57,16 @@ export default function InboxPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Auto-triage emails that haven't been triaged yet
   useEffect(() => {
     emails.forEach((email) => {
       if (!email.triageResult && !triaging.has(email.id)) {
         setTriaging((prev) => new Set(prev).add(email.id));
-
         fetch(`/api/emails/${email.id}/triage`, { method: "POST" })
           .then((r) => r.json())
           .then((res) => {
             if (res.data) {
               setEmails((prev) =>
-                prev.map((e) =>
-                  e.id === email.id
-                    ? { ...e, triageResult: res.data }
-                    : e
-                )
+                prev.map((e) => e.id === email.id ? { ...e, triageResult: res.data } : e)
               );
             }
           });
@@ -76,25 +78,31 @@ export default function InboxPage() {
     ? emails
     : emails.filter((e) => e.triageResult?.category === filter);
 
+  const counts = {
+    urgent:      emails.filter(e => e.triageResult?.category === "urgent").length,
+    needs_reply: emails.filter(e => e.triageResult?.category === "needs_reply").length,
+    fyi:         emails.filter(e => e.triageResult?.category === "fyi").length,
+    spam:        emails.filter(e => e.triageResult?.category === "spam").length,
+  };
+
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div style={{ maxWidth: 800 }}>
 
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center",
-        justifyContent: "space-between", marginBottom: 28,
+        justifyContent: "space-between", marginBottom: 24,
       }}>
         <div>
           <h1 style={{
-            fontSize: 22, fontWeight: 600,
-            color: "#f0f0ff", letterSpacing: "-0.3px",
+            fontSize: 20, fontWeight: 600,
+            color: "#1a2744", letterSpacing: "-0.2px",
           }}>Inbox</h1>
-          <p style={{ color: "#6b6b8a", fontSize: 13, marginTop: 4 }}>
-            {emails.length} emails · {emails.filter(e => e.triageResult).length} triaged
+          <p style={{ color: "#7a94b0", fontSize: 13, marginTop: 2 }}>
+            {emails.length} emails · {emails.filter(e => e.triageResult).length} triaged by AI
           </p>
         </div>
 
-        {/* Refresh button */}
         <button
           onClick={() => {
             setLoading(true);
@@ -105,158 +113,172 @@ export default function InboxPage() {
           }}
           style={{
             padding: "8px 16px",
-            background: "#ffffff08",
-            border: "1px solid #1e1e35",
-            borderRadius: 8, color: "#9090b8",
+            background: "#FFFFFF",
+            border: "1px solid #D4E3F0",
+            borderRadius: 8, color: "#3d5a80",
             fontSize: 13, cursor: "pointer",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Inter', sans-serif",
+            display: "flex", alignItems: "center", gap: 6,
             transition: "all 0.15s",
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.background = "#ffffff12";
-            (e.currentTarget as HTMLElement).style.color = "#e2e2f0";
+            (e.currentTarget as HTMLElement).style.borderColor = "#578FCA";
+            (e.currentTarget as HTMLElement).style.color = "#3674B5";
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.background = "#ffffff08";
-            (e.currentTarget as HTMLElement).style.color = "#9090b8";
+            (e.currentTarget as HTMLElement).style.borderColor = "#D4E3F0";
+            (e.currentTarget as HTMLElement).style.color = "#3d5a80";
           }}
-        >↻ Refresh</button>
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Refresh
+        </button>
       </div>
 
       {/* Filter tabs */}
       <div style={{
-        display: "flex", gap: 6,
-        marginBottom: 20, flexWrap: "wrap",
+        display: "flex", gap: 4, marginBottom: 16,
+        background: "#FFFFFF",
+        border: "1px solid #D4E3F0",
+        borderRadius: 10, padding: 4,
+        width: "fit-content",
       }}>
-        {FILTERS.map(({ label, value }) => (
-          <button
-            key={value}
-            onClick={() => setFilter(value)}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 20,
-              border: filter === value
-                ? "1px solid #6366f1"
-                : "1px solid #1e1e35",
-              background: filter === value
-                ? "#6366f120"
-                : "transparent",
-              color: filter === value ? "#818cf8" : "#6b6b8a",
-              fontSize: 12, fontWeight: 500,
-              cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-              transition: "all 0.15s",
-            }}
-          >{label}</button>
-        ))}
+        {FILTERS.map(({ label, value }) => {
+          const count = value !== "all" ? counts[value] : emails.length;
+          return (
+            <button
+              key={value}
+              onClick={() => setFilter(value)}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 7,
+                border: "none",
+                background: filter === value ? "#3674B5" : "transparent",
+                color: filter === value ? "#FFFFFF" : "#3d5a80",
+                fontSize: 13, fontWeight: filter === value ? 500 : 400,
+                cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
+                transition: "all 0.15s",
+                display: "flex", alignItems: "center", gap: 6,
+              }}
+            >
+              {label}
+              {count > 0 && (
+                <span style={{
+                  fontSize: 11,
+                  background: filter === value ? "rgba(255,255,255,0.25)" : "#EBF3FB",
+                  color: filter === value ? "#fff" : "#3674B5",
+                  padding: "1px 6px", borderRadius: 10,
+                  fontWeight: 500,
+                }}>{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Email list */}
-      {loading ? (
-        // Skeleton loader
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[...Array(6)].map((_, i) => (
-            <div key={i} style={{
-              height: 80,
-              background: "linear-gradient(90deg, #0f0f1a, #16162a, #0f0f1a)",
-              borderRadius: 12, border: "1px solid #1e1e35",
-              animation: "pulse 1.5s ease-in-out infinite",
-              animationDelay: `${i * 0.1}s`,
-            }}/>
-          ))}
-          <style>{`
-            @keyframes pulse {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.4; }
-            }
-          `}</style>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div style={{
-          textAlign: "center", padding: "60px 0",
-          color: "#45455a", fontSize: 14,
-        }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>📭</div>
-          No emails in this category
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {filtered.map((email) => (
+      <div style={{
+        background: "#FFFFFF",
+        border: "1px solid #D4E3F0",
+        borderRadius: 12, overflow: "hidden",
+      }}>
+        {loading ? (
+          <div style={{ padding: "20px 0" }}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid #EBF2FA",
+                display: "flex", gap: 12, alignItems: "center",
+              }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%",
+                  background: "#EBF2FA", flexShrink: 0,
+                }}/>
+                <div style={{ flex: 1 }}>
+                  <div style={{ height: 13, background: "#EBF2FA", borderRadius: 4, width: "40%", marginBottom: 8 }}/>
+                  <div style={{ height: 13, background: "#EBF2FA", borderRadius: 4, width: "70%", marginBottom: 6 }}/>
+                  <div style={{ height: 11, background: "#EBF2FA", borderRadius: 4, width: "55%" }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{
+            textAlign: "center", padding: "60px 0",
+            color: "#7a94b0", fontSize: 14,
+          }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
+            No emails in this category
+          </div>
+        ) : (
+          filtered.map((email, idx) => (
             <Link
               key={email.id}
               href={`/inbox/${email.id}`}
-              style={{ textDecoration: "none" }}
+              style={{ textDecoration: "none", display: "block" }}
             >
-              <div style={{
-                background: "#0f0f1a",
-                border: "1px solid #1e1e35",
-                borderRadius: 12,
-                padding: "16px 20px",
-                cursor: "pointer",
-                transition: "all 0.15s",
-                display: "grid",
-                gridTemplateColumns: "1fr auto",
-                gap: 12,
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = "#16162a";
-                (e.currentTarget as HTMLElement).style.borderColor = "#2e2e4e";
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = "#0f0f1a";
-                (e.currentTarget as HTMLElement).style.borderColor = "#1e1e35";
-              }}>
-                {/* Left side */}
-                <div style={{ minWidth: 0 }}>
-                  {/* Sender + badge */}
+              <div
+                style={{
+                  padding: "14px 20px",
+                  borderBottom: idx < filtered.length - 1 ? "1px solid #EBF2FA" : "none",
+                  display: "flex", gap: 14, alignItems: "flex-start",
+                  cursor: "pointer", transition: "background 0.1s",
+                  background: "#FFFFFF",
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#F7FBFF"}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "#FFFFFF"}
+              >
+                {/* Avatar */}
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%",
+                  background: avatarColor(extractEmail(email.from)),
+                  display: "flex", alignItems: "center",
+                  justifyContent: "center", fontSize: 13,
+                  color: "#FFFFFF", fontWeight: 600, flexShrink: 0,
+                }}>
+                  {getInitials(extractName(email.from))}
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
                     display: "flex", alignItems: "center",
-                    gap: 8, marginBottom: 4,
+                    justifyContent: "space-between", marginBottom: 3,
                   }}>
-                    {/* Avatar */}
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: `hsl(${extractEmail(email.from).charCodeAt(0) * 7 % 360}, 40%, 25%)`,
-                      display: "flex", alignItems: "center",
-                      justifyContent: "center", fontSize: 11,
-                      color: "#e2e2f0", fontWeight: 500,
-                      flexShrink: 0,
-                    }}>
-                      {extractName(email.from).charAt(0).toUpperCase()}
-                    </div>
-
-                    <span style={{
-                      fontSize: 13, fontWeight: 500,
-                      color: "#c0c0d8",
-                      overflow: "hidden", textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {extractName(email.from)}
-                    </span>
-
-                    {email.triageResult ? (
-                      <CategoryBadge category={email.triageResult.category} />
-                    ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{
-                        fontSize: 10, color: "#45455a",
-                        padding: "2px 8px",
-                        border: "1px solid #1e1e35",
-                        borderRadius: 20,
-                      }}>analyzing…</span>
-                    )}
+                        fontSize: 13, fontWeight: 500, color: "#1a2744",
+                      }}>
+                        {extractName(email.from)}
+                      </span>
+                      {email.triageResult ? (
+                        <CategoryBadge category={email.triageResult.category} />
+                      ) : (
+                        <span style={{
+                          fontSize: 10, color: "#a8bdd1",
+                          padding: "2px 7px",
+                          border: "1px solid #D4E3F0",
+                          borderRadius: 20,
+                        }}>analyzing…</span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 12, color: "#a8bdd1", flexShrink: 0 }}>
+                      {timeAgo(email.date)}
+                    </span>
                   </div>
 
-                  {/* Subject */}
                   <div style={{
-                    fontSize: 14, fontWeight: 500,
-                    color: "#e2e2f0", marginBottom: 4,
-                    overflow: "hidden", textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
+                    fontSize: 13, fontWeight: 500, color: "#1a2744",
+                    marginBottom: 3, overflow: "hidden",
+                    textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}>{email.subject}</div>
 
-                  {/* AI summary or snippet */}
                   <div style={{
-                    fontSize: 12, color: "#6b6b8a",
+                    fontSize: 12, color: "#7a94b0",
                     overflow: "hidden", textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                   }}>
@@ -264,31 +286,18 @@ export default function InboxPage() {
                   </div>
                 </div>
 
-                {/* Right side — time + priority */}
-                <div style={{
-                  display: "flex", flexDirection: "column",
-                  alignItems: "flex-end", gap: 6,
-                  flexShrink: 0,
-                }}>
-                  <span style={{ fontSize: 11, color: "#45455a" }}>
-                    {timeAgo(email.date)}
-                  </span>
-                  {email.triageResult && (
-                    <span style={{
-                      fontSize: 10,
-                      color: email.triageResult.priority <= 2
-                        ? "#f87171"
-                        : "#45455a",
-                    }}>
-                      P{email.triageResult.priority}
-                    </span>
-                  )}
-                </div>
+                {/* Priority dot */}
+                {email.triageResult && email.triageResult.priority <= 2 && (
+                  <div style={{
+                    width: 7, height: 7, borderRadius: "50%",
+                    background: "#DC3545", flexShrink: 0, marginTop: 6,
+                  }}/>
+                )}
               </div>
             </Link>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

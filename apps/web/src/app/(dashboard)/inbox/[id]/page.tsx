@@ -37,7 +37,7 @@ export default function EmailDetailPage() {
     fetch("/api/emails")
       .then((r) => r.json())
       .then((res) => {
-        const found = (res.data ?? []).find((e: ParsedEmail) => e.id === id);
+        const found = (res.data?.emails ?? []).find((e: ParsedEmail) => e.id === id);
         setEmail(found ?? null);
       })
       .finally(() => setLoading(false));

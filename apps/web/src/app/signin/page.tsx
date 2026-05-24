@@ -11,97 +11,116 @@ export default function SignInPage() {
       minHeight: "100vh",
       background: "linear-gradient(135deg, #EBF3FB 0%, #F0F4F9 50%, #E8F6F3 100%)",
       display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       fontFamily: "'Inter', sans-serif",
+      padding: "40px 24px",
     }}>
-      {/* Left panel */}
       <div style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        padding: "60px 80px",
-        maxWidth: 560,
-      }}>
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 56 }}>
-          <div style={{
-            width: 40, height: 40,
-            background: "#3674B5",
-            borderRadius: 10,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-          </div>
-          <span style={{ fontSize: 20, fontWeight: 600, color: "#1a2744", letterSpacing: "-0.3px" }}>
-            MailMind
-          </span>
-        </div>
-
-        <h1 style={{
-          fontSize: 36, fontWeight: 600,
-          color: "#1a2744", letterSpacing: "-0.5px",
-          lineHeight: 1.2, marginBottom: 16,
-        }}>
-          Your inbox,<br/>
-          <span style={{ color: "#3674B5" }}>intelligently managed</span>
-        </h1>
-
-        <p style={{
-          fontSize: 16, color: "#3d5a80",
-          lineHeight: 1.7, marginBottom: 40,
-        }}>
-          MailMind uses AI to triage your emails, draft replies in your tone, and help you reach inbox zero — effortlessly.
-        </p>
-
-        {/* Features */}
-        {[
-          { icon: "⚡", title: "Smart triage", desc: "Every email categorized by priority automatically" },
-          { icon: "✍️", title: "AI reply drafts", desc: "Replies written in your tone, ready to send" },
-          { icon: "📊", title: "Inbox insights", desc: "Weekly stats on your email patterns" },
-        ].map(({ icon, title, desc }) => (
-          <div key={title} style={{
-            display: "flex", gap: 14,
-            marginBottom: 20, alignItems: "flex-start",
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 8,
-              background: "#EBF3FB",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 16, flexShrink: 0,
-            }}>{icon}</div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: "#1a2744", marginBottom: 2 }}>{title}</div>
-              <div style={{ fontSize: 13, color: "#7a94b0", lineHeight: 1.5 }}>{desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Right panel */}
-      <div style={{
-        flex: 1,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "60px 80px",
+        gap: 80,
+        maxWidth: 1000,
+        width: "100%",
       }}>
+
+        {/* Left panel */}
         <div style={{
+          flex: 1,
+          maxWidth: 460,
+        }}>
+          {/* Logo */}
+          <div style={{
+            display: "flex", alignItems: "center",
+            gap: 12, marginBottom: 48,
+          }}>
+            <div style={{
+              width: 40, height: 40,
+              background: "#3674B5",
+              borderRadius: 10,
+              display: "flex", alignItems: "center",
+              justifyContent: "center",
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <span style={{
+              fontSize: 20, fontWeight: 600,
+              color: "#1a2744", letterSpacing: "-0.3px",
+            }}>MailMind</span>
+          </div>
+
+          {/* Heading */}
+          <h1 style={{
+            fontSize: 38, fontWeight: 700,
+            color: "#1a2744", letterSpacing: "-0.8px",
+            lineHeight: 1.15, marginBottom: 16,
+          }}>
+            Your inbox,<br/>
+            <span style={{ color: "#3674B5" }}>intelligently managed</span>
+          </h1>
+
+          <p style={{
+            fontSize: 15, color: "#3d5a80",
+            lineHeight: 1.7, marginBottom: 40,
+            maxWidth: 380,
+          }}>
+            MailMind uses AI to triage your emails, draft replies in your tone, and help you reach inbox zero — effortlessly.
+          </p>
+
+          {/* Features */}
+          {[
+            { icon: "⚡", title: "Smart triage", desc: "Every email categorized by priority automatically" },
+            { icon: "✍️", title: "AI reply drafts", desc: "Replies written in your tone, ready to send" },
+            { icon: "📊", title: "Inbox insights", desc: "Weekly stats on your email patterns" },
+          ].map(({ icon, title, desc }) => (
+            <div key={title} style={{
+              display: "flex", gap: 14,
+              marginBottom: 20, alignItems: "flex-start",
+            }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 9,
+                background: "#EBF3FB",
+                display: "flex", alignItems: "center",
+                justifyContent: "center",
+                fontSize: 17, flexShrink: 0,
+              }}>{icon}</div>
+              <div>
+                <div style={{
+                  fontSize: 14, fontWeight: 600,
+                  color: "#1a2744", marginBottom: 2,
+                }}>{title}</div>
+                <div style={{
+                  fontSize: 13, color: "#7a94b0",
+                  lineHeight: 1.5,
+                }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Right panel — sign in card */}
+        <div style={{
+          flex: "0 0 380px",
           background: "#FFFFFF",
           borderRadius: 20,
-          padding: "48px 44px",
-          width: "100%", maxWidth: 400,
-          boxShadow: "0 4px 24px rgba(54,116,181,0.1), 0 1px 4px rgba(0,0,0,0.05)",
+          padding: "44px 40px",
+          boxShadow: "0 4px 32px rgba(54,116,181,0.10), 0 1px 4px rgba(0,0,0,0.04)",
           border: "1px solid #D4E3F0",
         }}>
           <h2 style={{
             fontSize: 22, fontWeight: 600,
-            color: "#1a2744", marginBottom: 8,
+            color: "#1a2744", marginBottom: 6,
             letterSpacing: "-0.3px",
           }}>Sign in</h2>
-          <p style={{ fontSize: 14, color: "#7a94b0", marginBottom: 32 }}>
+
+          <p style={{
+            fontSize: 14, color: "#7a94b0",
+            marginBottom: 32, lineHeight: 1.5,
+          }}>
             Connect your Gmail to get started
           </p>
 
@@ -114,10 +133,11 @@ export default function SignInPage() {
             disabled={loading}
             style={{
               width: "100%", padding: "13px 20px",
-              background: loading ? "#F0F4F9" : "#FFFFFF",
+              background: loading ? "#F7FBFF" : "#FFFFFF",
               border: "1.5px solid #D4E3F0",
               borderRadius: 10, fontSize: 14,
-              fontWeight: 500, cursor: loading ? "not-allowed" : "pointer",
+              fontWeight: 500,
+              cursor: loading ? "not-allowed" : "pointer",
               display: "flex", alignItems: "center",
               justifyContent: "center", gap: 10,
               color: "#1a2744", transition: "all 0.15s",
@@ -127,11 +147,13 @@ export default function SignInPage() {
               if (!loading) {
                 (e.currentTarget as HTMLElement).style.borderColor = "#578FCA";
                 (e.currentTarget as HTMLElement).style.background = "#F7FBFF";
+                (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 12px rgba(54,116,181,0.12)";
               }
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.borderColor = "#D4E3F0";
               (e.currentTarget as HTMLElement).style.background = "#FFFFFF";
+              (e.currentTarget as HTMLElement).style.boxShadow = "none";
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24">
@@ -143,7 +165,11 @@ export default function SignInPage() {
             {loading ? "Connecting…" : "Continue with Google"}
           </button>
 
-          <div style={{ height: 1, background: "#EBF2FA", margin: "28px 0" }}/>
+          {/* Divider */}
+          <div style={{
+            height: 1, background: "#EBF2FA",
+            margin: "28px 0",
+          }}/>
 
           {/* Trust signals */}
           {[
@@ -152,8 +178,9 @@ export default function SignInPage() {
             "Cancel access anytime from Google",
           ].map((item) => (
             <div key={item} style={{
-              display: "flex", alignItems: "center", gap: 8,
-              marginBottom: 10, fontSize: 12, color: "#7a94b0",
+              display: "flex", alignItems: "center",
+              gap: 8, marginBottom: 10,
+              fontSize: 12, color: "#7a94b0",
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3674B5" strokeWidth="2.5">
                 <polyline points="20 6 9 17 4 12"/>

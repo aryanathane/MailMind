@@ -3,8 +3,6 @@ import { getValidAccessToken } from "@/lib/gmail-token";
 
 const GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
 
-// ─── Header helper ────────────────────────────────────────────────────────────
-
 function getHeader(
   headers: { name: string; value: string }[],
   name: string
@@ -14,14 +12,10 @@ function getHeader(
   );
 }
 
-// ─── Base64url decoder ────────────────────────────────────────────────────────
-
 function decodeBase64url(data: string): string {
   const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
   return Buffer.from(base64, "base64").toString("utf-8");
 }
-
-// ─── Body extractor ───────────────────────────────────────────────────────────
 
 function extractBody(payload: any): string {
   function collectParts(part: any): { plain: string; html: string } {
@@ -46,47 +40,57 @@ function extractBody(payload: any): string {
   }
 
   const { plain, html } = collectParts(payload);
-
-  // Prefer HTML if available — rendered safely in iframe
   if (html) return html;
-
-  // Fall back to plain text
   if (plain.trim()) return plain.trim();
-
   return "";
 }
 
-// ─── Fetch inbox emails ───────────────────────────────────────────────────────
+// Limit concurrent requests to avoid Gmail rate limits
+async function batchFetch<T>(
+  items: T[],
+  fn: (item: T) => Promise<any>,
+  concurrency = 5
+): Promise<any[]> {
+  const results: any[] = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.all(batch.map(fn));
+    results.push(...batchResults);
+  }
+  return results;
+}
 
 export async function fetchInboxEmails(
   googleId: string,
-  maxResults = 20
+  maxResults = 50
 ): Promise<ParsedEmail[]> {
   const token = await getValidAccessToken(googleId);
 
+  // Step 1 — get message IDs only (fast — single request)
   const listRes = await fetch(
     `${GMAIL_BASE}/messages?maxResults=${maxResults}&labelIds=INBOX`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
 
   if (!listRes.ok) {
-    throw new Error(`Gmail list failed: ${listRes.status} ${await listRes.text()}`);
+    throw new Error(`Gmail list failed: ${listRes.status}`);
   }
 
   const listData = await listRes.json();
   const messages: { id: string; threadId: string }[] = listData.messages ?? [];
   if (messages.length === 0) return [];
 
-  const emails = await Promise.all(
-    messages.map(async ({ id, threadId }) => {
+  // Step 2 — fetch full emails in batches of 5 (not all at once)
+  const emails = await batchFetch(
+    messages,
+    async ({ id, threadId }: { id: string; threadId: string }) => {
       const msgRes = await fetch(
+        // metadata+body format is faster than full
         `${GMAIL_BASE}/messages/${id}?format=full`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (!msgRes.ok) {
-        throw new Error(`Gmail get failed for ${id}: ${msgRes.status}`);
-      }
+      if (!msgRes.ok) return null;
 
       const msg = await msgRes.json();
       const headers: { name: string; value: string }[] = msg.payload?.headers ?? [];
@@ -100,13 +104,12 @@ export async function fetchInboxEmails(
         snippet:  msg.snippet ?? "",
         body:     extractBody(msg.payload),
       } satisfies ParsedEmail;
-    })
+    },
+    5 // 5 concurrent requests max
   );
 
-  return emails;
+  return emails.filter(Boolean);
 }
-
-// ─── Send reply ───────────────────────────────────────────────────────────────
 
 export async function sendReply(
   googleId: string,
@@ -138,10 +141,7 @@ export async function sendReply(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      raw: encodedEmail,
-      threadId,
-    }),
+    body: JSON.stringify({ raw: encodedEmail, threadId }),
   });
 
   if (!res.ok) {

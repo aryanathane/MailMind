@@ -1,20 +1,23 @@
 import path from "path";
 import * as fs from "fs";
 
-// Manually parse .env.local to avoid Windows encoding issues
-const envPath = path.resolve("D:\\MailMind\\apps\\server\\.env.local");
-const envFile = fs.readFileSync(envPath, "utf8");
-envFile.split("\n").forEach((line) => {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith("#")) return;
-  const eqIndex = trimmed.indexOf("=");
-  if (eqIndex === -1) return;
-  const key   = trimmed.slice(0, eqIndex).trim();
-  const value = trimmed.slice(eqIndex + 1).trim();
-  if (key) process.env[key] = value;
-});
-
-
+// Local dev: load from .env.local
+// Production (Railway): env vars injected automatically — skip file loading
+if (!process.env.MONGODB_URI) {
+  const envPath = path.resolve("D:\\MailMind\\apps\\server\\.env.local");
+  if (fs.existsSync(envPath)) {
+    const envFile = fs.readFileSync(envPath, "utf8");
+    envFile.split("\n").forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return;
+      const eqIndex = trimmed.indexOf("=");
+      if (eqIndex === -1) return;
+      const key   = trimmed.slice(0, eqIndex).trim();
+      const value = trimmed.slice(eqIndex + 1).trim();
+      if (key) process.env[key] = value;
+    });
+  }
+}
 
 import express from "express";
 import cors from "cors";

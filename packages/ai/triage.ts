@@ -2,7 +2,14 @@ import Groq from "groq-sdk";
 import type { TriageResult, EmailCategory } from "@mailmind/types";
 import { TRIAGE_SYSTEM_PROMPT, buildTriagePrompt } from "./prompts";
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let client: Groq | null = null;
+
+function getClient(): Groq {
+  if (!client) {
+    client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return client;
+}
 
 const VALID_CATEGORIES: EmailCategory[] = [
   "urgent",
@@ -52,7 +59,7 @@ export async function triageEmail(
 ): Promise<TriageResult> {
   const userMessage = buildTriagePrompt(subject, from, body);
 
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model:      "llama-3.3-70b-versatile",
     max_tokens: 256,
     messages: [

@@ -1,7 +1,14 @@
 import Groq from "groq-sdk";
 import { DRAFT_SYSTEM_PROMPT, buildDraftPrompt } from "./prompts";
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let client: Groq | null = null;
+
+function getClient(): Groq {
+  if (!client) {
+    client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return client;
+}
 
 // Returns a ReadableStream — pipe this directly to the API response
 // The browser receives words as they're generated, not all at once
@@ -14,7 +21,7 @@ export async function generateDraft(
   const userMessage = buildDraftPrompt(subject, from, emailBody, pastReplies);
 
   // Create a streaming completion
-  const groqStream = await client.chat.completions.create({
+  const groqStream = await getClient().chat.completions.create({
     model:      "llama-3.3-70b-versatile",
     max_tokens: 1024, // drafts can be longer than triage responses
     stream:     true, // key difference from triage — stream tokens as generated

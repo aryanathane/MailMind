@@ -3,6 +3,7 @@
   "tasks": {
     "dev": { "persistent": true, "cache": false },
     "build": { "dependsOn": ["^build"], "outputs": [".next/**"] },
+    "@mailmind/server#build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
     "lint": {}
   }
 }

@@ -2,23 +2,14 @@ import Groq from "groq-sdk";
 import type { TriageResult, EmailCategory } from "@mailmind/types";
 import { TRIAGE_SYSTEM_PROMPT, buildTriagePrompt } from "./prompts";
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 const VALID_CATEGORIES: EmailCategory[] = [
-  "urgent",
-  "needs_reply",
-  "fyi",
-  "spam",
+  "urgent", "needs_reply", "fyi", "spam",
 ];
 
 function parseTriageResponse(text: string): TriageResult {
   let parsed: any;
-
   try {
-    const cleaned = text
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
+    const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
     parsed = JSON.parse(cleaned);
   } catch {
     throw new Error(`Invalid JSON from Groq: ${text}`);
@@ -50,6 +41,8 @@ export async function triageEmail(
   from: string,
   body: string
 ): Promise<TriageResult> {
+  // Instantiate client here — not at module level
+  const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
   const userMessage = buildTriagePrompt(subject, from, body);
 
   const response = await client.chat.completions.create({

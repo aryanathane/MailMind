@@ -71,3 +71,40 @@ export function startTokenRefreshJob(): void {
 
   console.log("Token refresh cron job started — runs every 30 minutes");
 }
+// Runs every 6 days to renew Gmail watch before it expires
+export function startGmailWatchRenewalJob(): void {
+  cron.schedule("0 0 */6 * *", async () => {
+    console.log("Renewing Gmail watch...");
+    try {
+      const User = mongoose.model("User");
+      const users = await User.find({});
+
+      for (const user of users) {
+        try {
+          const token = await refreshUserToken(user);
+          await fetch(
+            "https://gmail.googleapis.com/gmail/v1/users/me/watch",
+            {
+              method: "POST",
+              headers: {
+                Authorization:  `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                topicName: "projects/mailmind-497011/topics/mailmind-gmail-notifications",
+                labelIds:  ["INBOX"],
+              }),
+            }
+          );
+          console.log(`Gmail watch renewed for ${user.email}`);
+        } catch (err) {
+          console.error(`Watch renewal failed for ${user.email}:`, err);
+        }
+      }
+    } catch (err) {
+      console.error("Watch renewal job error:", err);
+    }
+  });
+
+  console.log("Gmail watch renewal job started — runs every 6 days");
+}

@@ -2,7 +2,7 @@ import path from "path";
 import * as fs from "fs";
 
 // Local dev: load from .env.local
-// Production (Railway): env vars injected automatically — skip file loading
+// Production (Railway): env vars injected automatically
 if (!process.env.MONGODB_URI) {
   const envPath = path.resolve("D:\\MailMind\\apps\\server\\.env.local");
   if (fs.existsSync(envPath)) {
@@ -22,7 +22,7 @@ if (!process.env.MONGODB_URI) {
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import { startTokenRefreshJob } from "./jobs/token-refresh";
+import { startTokenRefreshJob, startGmailWatchRenewalJob } from "./jobs/token-refresh";
 import gmailWebhookRouter from "./routes/gmail-webhook";
 import User from "./models/User";
 import Email from "./models/Email";
@@ -57,6 +57,7 @@ async function start(): Promise<void> {
   try {
     await connectDB();
     startTokenRefreshJob();
+    startGmailWatchRenewalJob();
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

@@ -294,28 +294,7 @@ export default function SignInPage() {
           ))}
         </div>
       </div>
-      {/* Footer links */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 16,
-          marginTop: 16,
-        }}
-      >
-        <a
-          href="/privacy"
-          style={{ fontSize: 11, color: "#a8bdd1", textDecoration: "none" }}
-        >
-          Privacy Policy
-        </a>
-        <a
-          href="/terms"
-          style={{ fontSize: 11, color: "#a8bdd1", textDecoration: "none" }}
-        >
-          Terms of Service
-        </a>
-      </div>
+      
     </div>
   );
 }

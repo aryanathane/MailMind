@@ -124,8 +124,7 @@ export default async function DashboardLayout({
         {children}
       </main>
 
-      {/* Mobile bottom nav */}
-      <SidebarNav />
+      
 
       <style>{`
         /* Desktop — show sidebar, full padding */

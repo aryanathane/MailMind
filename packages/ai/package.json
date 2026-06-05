@@ -3,9 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",
+  "scripts": {
+    "test": "jest"
+  },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
     "typescript": "^5"
   },
+  
   "dependencies": {
     "groq-sdk": "^1.2.0"
   }

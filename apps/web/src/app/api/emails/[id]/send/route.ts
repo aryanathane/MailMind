@@ -3,19 +3,25 @@ import { auth } from "@/lib/auth";
 import { connectDB, Email, Draft } from "@mailmind/db";
 import { sendReply } from "@/lib/gmail";
 import type { ApiResponse } from "@mailmind/types";
+import { rateLimiters, checkRateLimit } from "@/lib/ratelimit";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   // Step 1 — check session
   const session = await auth();
   if (!session?.user?.googleId) {
     return NextResponse.json<ApiResponse<null>>(
       { error: "Unauthorized" },
-      { status: 401 }
+      { status: 401 },
     );
   }
+  const { limited, response } = await checkRateLimit(
+    rateLimiters.send,
+    session.user.googleId,
+  );
+  if (limited) return response!;
 
   try {
     await connectDB();
@@ -29,7 +35,7 @@ export async function POST(
     if (!body || typeof body !== "string" || body.trim() === "") {
       return NextResponse.json<ApiResponse<null>>(
         { error: "Reply body is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -38,7 +44,7 @@ export async function POST(
     if (!email) {
       return NextResponse.json<ApiResponse<null>>(
         { error: "Email not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -46,7 +52,7 @@ export async function POST(
     if (email.userId !== session.user.googleId) {
       return NextResponse.json<ApiResponse<null>>(
         { error: "Forbidden" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -54,7 +60,7 @@ export async function POST(
     if (email.isReplied) {
       return NextResponse.json<ApiResponse<null>>(
         { error: "Already replied to this email" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -62,20 +68,20 @@ export async function POST(
     await sendReply(
       session.user.googleId,
       email.threadId,
-      email.from,      // reply goes back to the sender
+      email.from, // reply goes back to the sender
       email.subject,
-      body.trim()
+      body.trim(),
     );
 
     // Step 7 — update Draft status to "sent" in MongoDB
     await Draft.findOneAndUpdate(
       { emailId: String(email._id) },
       {
-        body,                        // save final sent version
+        body, // save final sent version
         isEdited: isEdited ?? false, // did user edit Claude's draft?
-        status:   "sent",
-        sentAt:   new Date(),
-      }
+        status: "sent",
+        sentAt: new Date(),
+      },
     );
 
     // Step 8 — mark email as replied
@@ -84,12 +90,11 @@ export async function POST(
     return NextResponse.json<ApiResponse<{ message: string }>>({
       data: { message: "Reply sent successfully" },
     });
-
   } catch (err) {
     console.error("POST /api/emails/[id]/send error:", err);
     return NextResponse.json<ApiResponse<null>>(
       { error: "Failed to send reply" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -3,19 +3,25 @@ import { auth } from "@/lib/auth";
 import { connectDB, Email } from "@mailmind/db";
 import { triageEmail } from "@mailmind/ai";
 import type { ApiResponse, TriageResult } from "@mailmind/types";
+import { rateLimiters, checkRateLimit } from "@/lib/ratelimit";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   // Step 1 — check session
   const session = await auth();
   if (!session?.user?.googleId) {
     return NextResponse.json<ApiResponse<null>>(
       { error: "Unauthorized" },
-      { status: 401 }
+      { status: 401 },
     );
   }
+  const { limited, response } = await checkRateLimit(
+    rateLimiters.triage,
+    session.user.googleId,
+  );
+  if (limited) return response!;
 
   try {
     await connectDB();
@@ -27,7 +33,7 @@ export async function POST(
     if (!email) {
       return NextResponse.json<ApiResponse<null>>(
         { error: "Email not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -36,7 +42,7 @@ export async function POST(
     if (email.userId !== session.user.googleId) {
       return NextResponse.json<ApiResponse<null>>(
         { error: "Forbidden" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -51,7 +57,7 @@ export async function POST(
     const triageResult = await triageEmail(
       email.subject,
       email.from,
-      email.body
+      email.body,
     );
 
     // Step 6 — save result to MongoDB
@@ -61,12 +67,11 @@ export async function POST(
     return NextResponse.json<ApiResponse<TriageResult>>({
       data: triageResult,
     });
-
   } catch (err) {
     console.error("POST /api/emails/[id]/triage error:", err);
     return NextResponse.json<ApiResponse<null>>(
       { error: "Triage failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,10 +1,29 @@
+// ─── Sanitization ─────────────────────────────────────────────────────────────
+
+// Sanitize email content before sending to AI
+// Prevents prompt injection attacks
+function sanitizeForPrompt(text: string): string {
+  if (!text) return "";
+
+  return text
+    // Remove common prompt injection attempts
+    .replace(/ignore\s+(all\s+)?(previous|prior|above)\s+instructions?/gi, "[removed]")
+    .replace(/you\s+are\s+now\s+/gi, "[removed] ")
+    .replace(/new\s+instructions?:/gi, "[removed]:")
+    .replace(/system\s+prompt/gi, "[removed]")
+    .replace(/disregard\s+(all\s+)?(previous|prior)/gi, "[removed]")
+    .replace(/forget\s+(all\s+)?(previous|prior)/gi, "[removed]")
+    .replace(/act\s+as\s+(if\s+)?/gi, "[removed] ")
+    // Limit length
+    .slice(0, 3000);
+}
+
 // ─── Triage prompt ────────────────────────────────────────────────────────────
 
-// System prompt runs once — sets Claude's role and output format
 export const TRIAGE_SYSTEM_PROMPT = `
 You are an intelligent email assistant that triages emails for busy professionals.
 
-Analyze the email and respond with ONLY a valid JSON object — no explanation, 
+Analyze the email and respond with ONLY a valid JSON object — no explanation,
 no markdown, no code blocks. Just raw JSON.
 
 Return exactly this structure:
@@ -35,20 +54,23 @@ needsReply rules:
 Be consistent. Never return anything outside this JSON structure.
 `.trim();
 
-// Builds the user message for triage — called once per email
 export function buildTriagePrompt(
   subject: string,
   from: string,
   body: string
 ): string {
-  // Truncate body to 2000 chars — long emails don't need full text for triage
-  const truncatedBody = body.length > 2000
-    ? body.slice(0, 2000) + "\n\n[email truncated]"
-    : body;
+  // Sanitize all inputs before sending to AI
+  const safeSubject = sanitizeForPrompt(subject);
+  const safeFrom    = sanitizeForPrompt(from);
+  const safeBody    = sanitizeForPrompt(body);
+
+  const truncatedBody = safeBody.length > 2000
+    ? safeBody.slice(0, 2000) + "\n\n[truncated]"
+    : safeBody;
 
   return `
-From: ${from}
-Subject: ${subject}
+From: ${safeFrom}
+Subject: ${safeSubject}
 
 ${truncatedBody}
   `.trim();
@@ -66,25 +88,28 @@ Rules:
 - Be concise — no unnecessary filler phrases like "I hope this email finds you well"
 - Do not sign off with the user's name — they will add that themselves
 - Do not add a subject line — just the body
-- If you don't have enough context to answer a specific question, 
+- If you don't have enough context to answer a specific question,
   write [USER TO FILL IN] as a placeholder
 - Never start with "I" — vary your sentence openers
 
 Respond with ONLY the draft body text. No explanation, no metadata.
 `.trim();
 
-// Builds the user message for draft generation
 export function buildDraftPrompt(
   subject: string,
   from: string,
   emailBody: string,
-  pastReplies: string[] = [] // user's previous sent emails for tone matching
+  pastReplies: string[] = []
 ): string {
-  // Include up to 3 past replies as tone examples
+  // Sanitize all inputs
+  const safeSubject = sanitizeForPrompt(subject);
+  const safeFrom    = sanitizeForPrompt(from);
+  const safeBody    = sanitizeForPrompt(emailBody);
+
   const toneContext = pastReplies.length > 0
     ? `
 Here are examples of how the user writes emails:
-${pastReplies.slice(0, 3).map((r, i) => `Example ${i + 1}:\n${r}`).join("\n\n")}
+${pastReplies.slice(0, 3).map((r, i) => `Example ${i + 1}:\n${sanitizeForPrompt(r)}`).join("\n\n")}
 `
     : "";
 
@@ -92,9 +117,9 @@ ${pastReplies.slice(0, 3).map((r, i) => `Example ${i + 1}:\n${r}`).join("\n\n")}
 ${toneContext}
 Now write a reply to this email:
 
-From: ${from}
-Subject: ${subject}
+From: ${safeFrom}
+Subject: ${safeSubject}
 
-${emailBody.slice(0, 3000)}
+${safeBody.slice(0, 3000)}
   `.trim();
 }

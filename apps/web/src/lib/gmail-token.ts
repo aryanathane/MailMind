@@ -1,16 +1,20 @@
-import { connectDB, User } from "@mailmind/db";
+import { connectDB, User, encrypt, decrypt } from "@mailmind/db";
+import { GOOGLE_TOKEN_URL, TOKEN_EXPIRY_BUFFER } from "@/lib/constants";
 
-const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+async function refreshAccessToken(
+  userId:       string,
+  refreshToken: string
+): Promise<string> {
+  // Decrypt refresh token before using with Google API
+  const decryptedRefreshToken = decrypt(refreshToken);
 
-// Silently refresh the access token using the stored refresh token
-async function refreshAccessToken(userId: string, refreshToken: string): Promise<string> {
   const res = await fetch(GOOGLE_TOKEN_URL, {
-    method: "POST",
+    method:  "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+    body:    new URLSearchParams({
       client_id:     process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: refreshToken,
+      refresh_token: decryptedRefreshToken,
       grant_type:    "refresh_token",
     }),
   });
@@ -22,33 +26,33 @@ async function refreshAccessToken(userId: string, refreshToken: string): Promise
 
   const data = await res.json();
 
-  // Save the new access token and expiry back to MongoDB
+  // Encrypt new access token before saving to MongoDB
+  const encryptedAccessToken = encrypt(data.access_token);
+
   await User.findByIdAndUpdate(userId, {
-    accessToken: data.access_token,
-    // expires_in is in seconds — convert to a future Date
+    accessToken: encryptedAccessToken,
     tokenExpiry: new Date(Date.now() + data.expires_in * 1000),
   });
 
+  // Return decrypted token for immediate use
   return data.access_token as string;
 }
 
-// Call this before EVERY Gmail API request
-// Returns a valid access token — refreshes automatically if expired
 export async function getValidAccessToken(googleId: string): Promise<string> {
   await connectDB();
 
   const user = await User.findOne({ googleId });
   if (!user) throw new Error(`User not found for googleId: ${googleId}`);
 
-  // Check if token is expired or expiring within the next 60 seconds
-  // 60 second buffer prevents edge case where token expires mid-request
+  // Check if token is expired or expiring within buffer window
   const expiresIn = user.tokenExpiry.getTime() - Date.now();
-  const isExpired = expiresIn < 60_000;
+  const isExpired = expiresIn < TOKEN_EXPIRY_BUFFER;
 
   if (isExpired) {
     console.log(`Token expired for ${user.email} — refreshing...`);
     return refreshAccessToken(String(user._id), user.refreshToken);
   }
 
-  return user.accessToken;
+  // Decrypt access token before returning to caller
+  return decrypt(user.accessToken);
 }

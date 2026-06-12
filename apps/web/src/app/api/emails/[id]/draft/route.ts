@@ -4,21 +4,29 @@ import { connectDB, Email } from "@mailmind/db";
 import { generateDraft } from "@mailmind/ai";
 import type { ApiResponse } from "@mailmind/types";
 import { rateLimiters, checkRateLimit } from "@/lib/ratelimit";
+import { checkOrigin } from "@/lib/csrf";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  // CSRF check
+  const csrfError = checkOrigin(request);
+  if (csrfError) return csrfError;
+
+  // Auth check
   const session = await auth();
   if (!session?.user?.googleId) {
     return NextResponse.json<ApiResponse<null>>(
       { error: "Unauthorized" },
-      { status: 401 },
+      { status: 401 }
     );
   }
+
+  // Rate limit check
   const { limited, response } = await checkRateLimit(
     rateLimiters.draft,
-    session.user.googleId,
+    session.user.googleId
   );
   if (limited) return response!;
 
@@ -30,32 +38,32 @@ export async function POST(
     if (!email) {
       return NextResponse.json<ApiResponse<null>>(
         { error: "Email not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
     if (email.userId !== session.user.googleId) {
       return NextResponse.json<ApiResponse<null>>(
         { error: "Forbidden" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
     // Generate streaming draft
     const stream = await generateDraft(email.subject, email.from, email.body);
 
-    // Return stream directly — browser receives tokens as they arrive
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Type":    "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
       },
     });
+
   } catch (err) {
     console.error("POST /api/emails/[id]/draft error:", err);
     return NextResponse.json<ApiResponse<null>>(
       { error: "Draft generation failed" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

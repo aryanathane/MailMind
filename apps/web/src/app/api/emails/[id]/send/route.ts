@@ -4,11 +4,13 @@ import { connectDB, Email, Draft } from "@mailmind/db";
 import { sendReply } from "@/lib/gmail";
 import type { ApiResponse } from "@mailmind/types";
 import { rateLimiters, checkRateLimit } from "@/lib/ratelimit";
-
+import { checkOrigin } from "@/lib/csrf";
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrfError = checkOrigin(request);
+  if (csrfError) return csrfError;
   // Step 1 — check session
   const session = await auth();
   if (!session?.user?.googleId) {

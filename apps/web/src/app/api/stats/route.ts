@@ -2,17 +2,23 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectDB, Email, Draft } from "@mailmind/db";
 import type { ApiResponse } from "@mailmind/types";
+import { checkOrigin } from "@/lib/csrf";
 
 export interface StatsData {
-  total:       number;
-  triaged:     number;
-  replied:     number;
-  byCategory:  Record<string, number>;
-  replyRate:   number;
-  editRate:    number;
+  total:      number;
+  triaged:    number;
+  replied:    number;
+  byCategory: Record<string, number>;
+  replyRate:  number;
+  editRate:   number;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  // CSRF check
+  const csrfError = checkOrigin(request);
+  if (csrfError) return csrfError;
+
+  // Auth check
   const session = await auth();
   if (!session?.user?.googleId) {
     return NextResponse.json<ApiResponse<null>>(
@@ -47,8 +53,8 @@ export async function GET() {
         triaged:    triaged.length,
         replied:    replied.length,
         byCategory,
-        replyRate:  replied.length  / (triaged.length || 1),
-        editRate:   edited.length   / (drafts.length  || 1),
+        replyRate:  replied.length / (triaged.length || 1),
+        editRate:   edited.length  / (drafts.length  || 1),
       },
     });
 

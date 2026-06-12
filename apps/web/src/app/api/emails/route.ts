@@ -4,12 +4,15 @@ import { connectDB, Email } from "@mailmind/db";
 import { fetchInboxEmails } from "@/lib/gmail";
 import type { ApiResponse, ParsedEmail } from "@mailmind/types";
 import { rateLimiters, checkRateLimit } from "@/lib/ratelimit";
+import { checkOrigin } from "@/lib/csrf";
 
 // In-memory cache — prevents repeated Gmail syncs within 5 minutes
 const syncCache = new Map<string, number>();
 const SYNC_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 
 export async function GET(request: Request) {
+  const csrfError = checkOrigin(request);
+  if (csrfError) return csrfError;
   const session = await auth();
   if (!session?.user?.googleId) {
     return NextResponse.json<ApiResponse<null>>(

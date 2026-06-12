@@ -1,6 +1,9 @@
 // Connection utility
 export { connectDB } from "./lib/db";
 
+// Crypto utilities
+export { encrypt, decrypt, isEncrypted } from "./lib/crypto";
+
 // All models — import what you need from @mailmind/db
 export { default as User } from "./models/User";
 export { default as Email } from "./models/Email";

@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectDB, Email } from "@mailmind/db";
 import type { ApiResponse, ParsedEmail } from "@mailmind/types";
-
+import { checkOrigin } from "@/lib/csrf";
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const csrfError = checkOrigin(request);
+  if (csrfError) return csrfError;
   const session = await auth();
   if (!session?.user?.googleId) {
     return NextResponse.json<ApiResponse<null>>(

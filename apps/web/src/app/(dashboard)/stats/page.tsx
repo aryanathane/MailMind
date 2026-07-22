@@ -51,6 +51,8 @@ export default function StatsPage() {
   const isMobile              = useIsMobile();
   const [stats,   setStats]   = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting,   setExporting]   = useState(false);
+  const [exportError, setExportError] = useState("");
 
   useEffect(() => {
     fetch("/api/stats")
@@ -58,6 +60,32 @@ export default function StatsPage() {
       .then((res) => setStats(res.data ?? null))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleExport = async (format: "json" | "csv") => {
+    setExporting(true);
+    setExportError("");
+
+    try {
+      const res  = await fetch("/api/export", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ format }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Export failed");
+
+      const link    = document.createElement("a");
+      link.href     = data.data.downloadUrl;
+      link.download = `mailmind-export.${format}`;
+      link.click();
+
+    } catch (err: any) {
+      setExportError(err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (loading) return (
     <div style={{ maxWidth: 900 }}>
@@ -98,16 +126,94 @@ export default function StatsPage() {
     <div style={{ maxWidth: 900 }}>
 
       {/* Header */}
-      <div style={{ marginBottom: isMobile ? 20 : 28 }}>
-        <h1 style={{
-          fontSize:      isMobile ? 18 : 20,
-          fontWeight:    600,
-          color:         "#1a2744",
-          letterSpacing: "-0.2px",
-        }}>Stats</h1>
-        <p style={{ color: "#7a94b0", fontSize: 13, marginTop: 2 }}>
-          Your MailMind activity at a glance
-        </p>
+      <div style={{
+        display:        "flex",
+        alignItems:     isMobile ? "flex-start" : "center",
+        justifyContent: "space-between",
+        flexDirection:  isMobile ? "column" : "row",
+        gap:            isMobile ? 12 : 0,
+        marginBottom:   isMobile ? 20 : 28,
+      }}>
+        <div>
+          <h1 style={{
+            fontSize:      isMobile ? 18 : 20,
+            fontWeight:    600,
+            color:         "#1a2744",
+            letterSpacing: "-0.2px",
+          }}>Stats</h1>
+          <p style={{ color: "#7a94b0", fontSize: 13, marginTop: 2 }}>
+            Your MailMind activity at a glance
+          </p>
+        </div>
+
+        {/* Export buttons */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => handleExport("csv")}
+              disabled={exporting}
+              style={{
+                padding:      "8px 16px",
+                background:   "#FFFFFF",
+                border:       "1px solid #D4E3F0",
+                borderRadius: 8,
+                color:        "#3d5a80",
+                fontSize:     13,
+                cursor:       exporting ? "not-allowed" : "pointer",
+                fontFamily:   "'Inter', sans-serif",
+                display:      "flex",
+                alignItems:   "center",
+                gap:          6,
+                transition:   "all 0.15s",
+              }}
+              onMouseEnter={e => {
+                if (!exporting) {
+                  (e.currentTarget as HTMLElement).style.borderColor = "#578FCA";
+                  (e.currentTarget as HTMLElement).style.color = "#3674B5";
+                }
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = "#D4E3F0";
+                (e.currentTarget as HTMLElement).style.color = "#3d5a80";
+              }}
+            >
+              {exporting ? "Exporting…" : "↓ Export CSV"}
+            </button>
+
+            <button
+              onClick={() => handleExport("json")}
+              disabled={exporting}
+              style={{
+                padding:      "8px 16px",
+                background:   "#3674B5",
+                border:       "none",
+                borderRadius: 8,
+                color:        "#FFFFFF",
+                fontSize:     13,
+                cursor:       exporting ? "not-allowed" : "pointer",
+                fontFamily:   "'Inter', sans-serif",
+                display:      "flex",
+                alignItems:   "center",
+                gap:          6,
+                transition:   "opacity 0.15s",
+                opacity:      exporting ? 0.7 : 1,
+              }}
+            >
+              {exporting ? "Exporting…" : "↓ Export JSON"}
+            </button>
+          </div>
+
+          {exportError && (
+            <div style={{
+              fontSize:     12,
+              color:        "#C0392B",
+              background:   "#FDECEA",
+              border:       "1px solid #F5C6C2",
+              borderRadius: 6,
+              padding:      "6px 10px",
+            }}>{exportError}</div>
+          )}
+        </div>
       </div>
 
       {/* Stat cards — 2 col on mobile, 4 col on desktop */}

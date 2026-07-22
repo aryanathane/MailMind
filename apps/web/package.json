@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1092.0",
+    "@aws-sdk/s3-request-presigner": "^3.1092.0",
     "@mailmind/ai": "*",
     "@mailmind/db": "*",
     "@mailmind/types": "*",

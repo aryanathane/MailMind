@@ -1,69 +1,81 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis }     from "@upstash/redis";
 
-const redis = new Redis({
-  url:   process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const hasRedisConfig =
+  !!process.env.UPSTASH_REDIS_REST_URL &&
+  !!process.env.UPSTASH_REDIS_REST_TOKEN;
+
+const redis = hasRedisConfig
+  ? new Redis({
+      url:   process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  : null;
+
+function makeLimiter(requests: number, window: string) {
+  if (!redis) return null;
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(requests, window as any),
+    prefix:  "mailmind",
+  });
+}
 
 // Different limits for different endpoints
 export const rateLimiters = {
   // General email fetching — 30 per minute
-  emails: new Ratelimit({
-    redis,
-    limiter:   Ratelimit.slidingWindow(30, "1 m"),
-    prefix:    "mailmind:emails",
-  }),
+  emails: makeLimiter(30, "1 m"),
 
   // AI triage — 20 per minute (Groq has rate limits)
-  triage: new Ratelimit({
-    redis,
-    limiter:   Ratelimit.slidingWindow(20, "1 m"),
-    prefix:    "mailmind:triage",
-  }),
+  triage: makeLimiter(20, "1 m"),
 
   // Draft generation — 10 per minute (streaming is expensive)
-  draft: new Ratelimit({
-    redis,
-    limiter:   Ratelimit.slidingWindow(10, "1 m"),
-    prefix:    "mailmind:draft",
-  }),
+  draft: makeLimiter(10, "1 m"),
 
   // Send email — 5 per minute (prevent spam)
-  send: new Ratelimit({
-    redis,
-    limiter:   Ratelimit.slidingWindow(5, "1 m"),
-    prefix:    "mailmind:send",
-  }),
+  send: makeLimiter(5, "1 m"),
 };
 
 // Helper — returns 429 response if rate limited
+// Fails open (allows the request) if Redis is unreachable or not configured,
+// so a Redis outage never takes down the whole app
 export async function checkRateLimit(
-  limiter: Ratelimit,
-  identifier: string
+  limiter:    Ratelimit | null,
+  identifier: string,
+  request?:   Request
 ): Promise<{ limited: boolean; response?: Response }> {
-  const { success, limit, remaining, reset } = await limiter.limit(identifier);
+  if (!limiter) return { limited: false };
 
-  if (!success) {
-    return {
-      limited:  true,
-      response: Response.json(
-        {
-          error:     "Too many requests",
-          retryAfter: Math.ceil((reset - Date.now()) / 1000),
-        },
-        {
-          status:  429,
-          headers: {
-            "X-RateLimit-Limit":     limit.toString(),
-            "X-RateLimit-Remaining": remaining.toString(),
-            "X-RateLimit-Reset":     reset.toString(),
-            "Retry-After":           Math.ceil((reset - Date.now()) / 1000).toString(),
+  try {
+    const ip  = request?.headers.get("x-forwarded-for") ?? "unknown";
+    const key = `${identifier}:${ip}`;
+
+    const { success, limit, remaining, reset } = await limiter.limit(key);
+
+    if (!success) {
+      return {
+        limited: true,
+        response: Response.json(
+          {
+            error:      "Too many requests",
+            retryAfter: Math.ceil((reset - Date.now()) / 1000),
           },
-        }
-      ),
-    };
-  }
+          {
+            status: 429,
+            headers: {
+              "X-RateLimit-Limit":     limit.toString(),
+              "X-RateLimit-Remaining": remaining.toString(),
+              "X-RateLimit-Reset":     reset.toString(),
+              "Retry-After":           Math.ceil((reset - Date.now()) / 1000).toString(),
+            },
+          }
+        ),
+      };
+    }
 
-  return { limited: false };
+    return { limited: false };
+  } catch (err) {
+    console.error("Rate limit check failed, allowing request:", err);
+    return { limited: false };
+  }
 }

@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
     // Serve from MongoDB instantly
     const [emails, total] = await Promise.all([
-      Email.find({ userId }).sort({ date: -1 }).skip(skip).limit(limit).lean(),
+      Email.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Email.countDocuments({ userId }),
     ]);
 

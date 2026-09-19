@@ -46,7 +46,7 @@ export async function triageEmail(
   const userMessage = buildTriagePrompt(subject, from, body);
 
   const response = await client.chat.completions.create({
-    model: "openai/gpt-oss-120b",
+    model: "openai/gpt-oss-20b",
     max_tokens: 256,
     messages: [
       { role: "system", content: TRIAGE_SYSTEM_PROMPT },

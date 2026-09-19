@@ -1,4 +1,3 @@
-
 <div align="center">
   <img src="https://img.shields.io/badge/MailMind-AI%20Email%20Assistant-3674B5?style=for-the-badge&logo=gmail&logoColor=white" alt="MailMind"/>
   
@@ -36,6 +35,12 @@ MailMind is a full-stack AI-powered email assistant that connects to your Gmail 
 **[https://mail-mind-web-zeta.vercel.app](https://mail-mind-web-zeta.vercel.app)**
 
 > Sign in with Google to try it with your own Gmail inbox.
+
+## 🎥 Demo Video
+
+**[▶️ Watch the demo video](https://drive.google.com/file/d/1TMREEtjO7gXQzea75-E7QZ7site2Z5L0/view?usp=sharing)**
+
+> A quick walkthrough of MailMind: Google sign-in, AI triage, streaming reply drafts, real-time sync, and the stats dashboard.
 
 ## 🛠 Tech Stack
 

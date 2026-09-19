@@ -120,7 +120,7 @@ async function runTriage(subject, from, body) {
   const truncatedBody = body.length > 2000 ? body.slice(0, 2000) + "\n\n[truncated]" : body;
 
   const response = await groq.chat.completions.create({
-    model: "openai/gpt-oss-120b",
+    model: "openai/gpt-oss-20b",
     max_tokens: 256,
     messages: [
       {

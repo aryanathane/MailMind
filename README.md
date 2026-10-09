@@ -222,14 +222,6 @@ npm install
 | `packages/db/lib/crypto.ts` | AES-256 encryption/decryption for OAuth tokens |
 | `apps/lambda-triage/index.mjs` | Standalone Lambda handler — Pub/Sub webhook, Gmail fetch, AI triage, MongoDB write |
 
-## 🧭 Known Gaps
-
-Being upfront about what's not finished:
-
-- Legacy Express cron jobs (token refresh, Gmail watch renewal) haven't been migrated to scheduled Lambda functions yet
-- No automated CI/CD for Lambda deployment — currently built and uploaded manually
-- Email body content is not encrypted at rest, only OAuth tokens are
-- Integration/E2E test coverage is thin — only unit tests exist for the AI package
 
 ## 📄 License
 

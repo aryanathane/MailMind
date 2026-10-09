@@ -79,7 +79,7 @@ MailMind is a full-stack AI-powered email assistant that connects to your Gmail 
 ## ✨ Features
 
 - **🔐 Google OAuth** — secure sign-in with Gmail access, OAuth tokens encrypted at rest (AES-256)
-- **⚡ AI Triage** — every email categorized by priority using LLaMA 3.3
+- **⚡ AI Triage** — every email categorized by priority using openai/gpt-oss-120b
 - **✍️ Draft Generation** — streaming AI reply drafts in your tone
 - **📨 Real-time Sync** — Gmail Pub/Sub → AWS Lambda, no polling, no idle server cost
 - **☁️ S3 Export** — download your stats as CSV/JSON via secure, time-limited presigned URLs
